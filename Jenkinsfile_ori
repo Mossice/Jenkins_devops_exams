@@ -1,0 +1,158 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_ID = "mossice"
+        DOCKER_PASS = credentials("DOCKER_HUB_PASS")
+        IMAGE_TAG = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+        KUBECONFIG = "${env.WORKSPACE}/kubeconfig"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Prepare kubeconfig') {
+            steps {
+                withCredentials([file(credentialsId: 'config', variable: 'KUBE_CONFIG_FILE')]) {
+                    sh '''
+                    cp "$KUBE_CONFIG_FILE" "$KUBECONFIG"
+                    chmod 600 "$KUBECONFIG"
+                    k3s kubectl get nodes
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                sh '''
+                docker build -t $DOCKER_ID/movie-service:$IMAGE_TAG ./movie-service
+                docker build -t $DOCKER_ID/cast-service:$IMAGE_TAG ./cast-service
+                '''
+            }
+        }
+
+        stage('Functional Test with Docker Compose') {
+            steps {
+                sh '''
+                docker compose down -v || true
+                docker compose up -d --build
+                sleep 20
+
+                curl -f http://localhost:8001/api/v1/movies/docs
+                curl -f http://localhost:8002/api/v1/casts/docs
+
+                docker compose down -v
+                '''
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                sh '''
+                echo "$DOCKER_PASS" | docker login -u "$DOCKER_ID" --password-stdin
+
+                docker push $DOCKER_ID/movie-service:$IMAGE_TAG
+                docker push $DOCKER_ID/cast-service:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Create Namespaces') {
+            steps {
+                sh '''
+                k3s kubectl get namespace dev || k3s kubectl create namespace dev
+                k3s kubectl get namespace qa || k3s kubectl create namespace qa
+                k3s kubectl get namespace staging || k3s kubectl create namespace staging
+                k3s kubectl get namespace prod || k3s kubectl create namespace prod
+                '''
+            }
+        }
+
+        stage('Deploy Dev') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                sh '''
+                helm upgrade --install movieapp-dev ./charts \
+                  --namespace dev \
+                  --set movie.image.repository=$DOCKER_ID/movie-service \
+                  --set movie.image.tag=$IMAGE_TAG \
+                  --set cast.image.repository=$DOCKER_ID/cast-service \
+                  --set cast.image.tag=$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Deploy QA') {
+            when {
+                branch 'qa'
+            }
+            steps {
+                sh '''
+                helm upgrade --install movieapp-qa ./charts \
+                  --namespace qa \
+                  --set movie.image.repository=$DOCKER_ID/movie-service \
+                  --set movie.image.tag=$IMAGE_TAG \
+                  --set cast.image.repository=$DOCKER_ID/cast-service \
+                  --set cast.image.tag=$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Deploy Staging') {
+            when {
+                branch 'staging'
+            }
+            steps {
+                sh '''
+                helm upgrade --install movieapp-staging ./charts \
+                  --namespace staging \
+                  --set movie.image.repository=$DOCKER_ID/movie-service \
+                  --set movie.image.tag=$IMAGE_TAG \
+                  --set cast.image.repository=$DOCKER_ID/cast-service \
+                  --set cast.image.tag=$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Manual Approval Production') {
+            when {
+                branch 'master'
+            }
+            steps {
+                input message: 'Confirmer le déploiement en production depuis master ?'
+            }
+        }
+
+        stage('Deploy Production') {
+            when {
+                branch 'master'
+            }
+            steps {
+                sh '''
+                helm upgrade --install movieapp-prod ./charts \
+                  --namespace prod \
+                  --set movie.image.repository=$DOCKER_ID/movie-service \
+                  --set movie.image.tag=$IMAGE_TAG \
+                  --set cast.image.repository=$DOCKER_ID/cast-service \
+                  --set cast.image.tag=$IMAGE_TAG
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+            docker compose down -v || true
+            '''
+        }
+    }
+}

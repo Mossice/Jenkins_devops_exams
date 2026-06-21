@@ -1,0 +1,48 @@
+replicaCount: 3
+
+imagePullSecrets:
+  - name: regcred
+
+movie:
+  image:
+    repository: mossice/movie-service
+    tag: manual-test
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 80
+    targetPort: 8000
+    nodePort: 30081
+  env:
+    DATABASE_URI: postgresql://movie_db_username:movie_db_password@movie-db/movie_db_dev
+    CAST_SERVICE_HOST_URL: http://cast-service:80/api/v1/casts/
+  probePath: /api/v1/movies/docs
+
+cast:
+  image:
+    repository: mossice/cast-service
+    tag: manual-test
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 80
+    targetPort: 8000
+    nodePort: 30082
+  env:
+    DATABASE_URI: postgresql://cast_db_username:cast_db_password@cast-db/cast_db_dev
+  probePath: /api/v1/casts/docs
+
+movieDb:
+  image: postgres:12.1-alpine
+  username: movie_db_username
+  password: movie_db_password
+  database: movie_db_dev
+
+castDb:
+  image: postgres:12.1-alpine
+  username: cast_db_username
+  password: cast_db_password
+  database: cast_db_dev
+
+command:
+  value: "sleep 10 && uvicorn app.main:app --host 0.0.0.0 --port 8000"
