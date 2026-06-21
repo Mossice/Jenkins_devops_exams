@@ -33,18 +33,31 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - {{ .Values.command.value | quote }}
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
+          env:
+            - name: DATABASE_URI
+              value: {{ .Values.env.DATABASE_URI | quote }}
+            - name: CAST_SERVICE_HOST_URL
+              value: {{ .Values.env.CAST_SERVICE_HOST_URL | quote }}
           livenessProbe:
             httpGet:
-              path: /api/v1/checkapi
+              path: {{ .Values.probe.path }}
               port: http
+            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probe.periodSeconds }}
           readinessProbe:
             httpGet:
-              path: /api/v1/checkapi
+              path: {{ .Values.probe.path }}
               port: http
+            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probe.periodSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
