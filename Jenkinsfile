@@ -62,7 +62,7 @@ pipeline {
             steps {
                 sh '''
                 mkdir -p .kube
-                export KUBECONFIG=$WORKSPACE/.kube/config
+                export KUBECONFIG=/home/vagrant/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
                 k3s kubectl get ns dev || k3s kubectl create ns dev
@@ -82,7 +82,7 @@ pipeline {
             }
             steps {
                 sh '''
-                export KUBECONFIG=$WORKSPACE/.kube/config
+                export KUBECONFIG=/home/vagrant/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
                 helm upgrade --install movieapp-dev ./charts -n dev \
@@ -105,7 +105,7 @@ pipeline {
             }
             steps {
                 sh '''  
-                export KUBECONFIG=$WORKSPACE/.kube/config
+                export KUBECONFIG=/home/vagrant/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
                 helm upgrade --install movieapp-qa ./charts -n qa \
@@ -128,7 +128,7 @@ pipeline {
             }
             steps {
                 sh '''
-                export KUBECONFIG=$WORKSPACE/.kube/config
+                export KUBECONFIG=/home/vagrant/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
                 helm upgrade --install movieapp-staging ./charts -n staging \
@@ -160,7 +160,7 @@ pipeline {
             }
             steps {
                 sh '''
-                export KUBECONFIG=$WORKSPACE/.kube/config
+                export KUBECONFIG=/home/vagrant/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
                 helm upgrade --install movieapp-prod ./charts -n prod \
