@@ -2,21 +2,11 @@ pipeline {
     agent any
 
     environment {
-<<<<<<< HEAD
         DOCKER_ID = "mossice"
         MOVIE_IMAGE = "movie-service"
         CAST_IMAGE  = "cast-service"
         DOCKER_TAG = "v.${BUILD_ID}.0"
         WORKSPACE = "/home/vagrant"
-=======
-        DOCKER_ID     = "mossice"
-        MOVIE_IMAGE   = "movie-service"
-        CAST_IMAGE    = "cast-service"
-        DOCKER_TAG    = "v.${BUILD_NUMBER}.0"
-
-        DOCKER_PASS   = credentials("DOCKER_HUB_PASS")
-        KUBECONFIG    = credentials("config")
->>>>>>> develop
     }
 
     stages {
@@ -41,7 +31,6 @@ pipeline {
                 sh '''
                 docker compose down -v || true
                 docker compose up -d --build
-
                 sleep 20
 
                 curl -I http://localhost:8001/api/v1/movies/docs
@@ -53,6 +42,9 @@ pipeline {
         }
 
         stage('Docker Push') {
+            environment {
+                DOCKER_PASS = credentials("DOCKER_HUB_PASS")
+            }
             steps {
                 sh '''
                 echo "$DOCKER_PASS" | docker login -u "$DOCKER_ID" --password-stdin
@@ -64,21 +56,15 @@ pipeline {
         }
 
         stage('Prepare Kubernetes') {
-<<<<<<< HEAD
             environment {
                 KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
                 mkdir -p .kube
-                //cp "$KUBECONFIG" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
-=======
-            steps {
-                sh '''
->>>>>>> develop
                 k3s kubectl get ns dev || k3s kubectl create ns dev
                 k3s kubectl get ns qa || k3s kubectl create ns qa
                 k3s kubectl get ns staging || k3s kubectl create ns staging
@@ -91,20 +77,14 @@ pipeline {
             when {
                 branch 'develop'
             }
-<<<<<<< HEAD
             environment {
                 KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
-                //cp "$KUBE_CONFIG_FILE" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
-=======
-            steps {
-                sh '''
->>>>>>> develop
                 helm upgrade --install movieapp-dev ./charts -n dev \
                   --set movie.image.repository=$DOCKER_ID/$MOVIE_IMAGE \
                   --set movie.image.tag=$DOCKER_TAG \
@@ -120,20 +100,14 @@ pipeline {
             when {
                 branch 'qa'
             }
-<<<<<<< HEAD
             environment {
                 KUBECONFIG = credentials("config")
             }
             steps {
-                sh '''
-                //cp "$KUBE_CONFIG_FILE" .kube/config
+                sh '''  
                 export KUBECONFIG=$WORKSPACE/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
-=======
-            steps {
-                sh '''
->>>>>>> develop
                 helm upgrade --install movieapp-qa ./charts -n qa \
                   --set movie.image.repository=$DOCKER_ID/$MOVIE_IMAGE \
                   --set movie.image.tag=$DOCKER_TAG \
@@ -149,20 +123,14 @@ pipeline {
             when {
                 branch 'staging'
             }
-<<<<<<< HEAD
             environment {
                 KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
-                //cp "$KUBE_CONFIG_FILE" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
-=======
-            steps {
-                sh '''
->>>>>>> develop
                 helm upgrade --install movieapp-staging ./charts -n staging \
                   --set movie.image.repository=$DOCKER_ID/$MOVIE_IMAGE \
                   --set movie.image.tag=$DOCKER_TAG \
@@ -187,20 +155,14 @@ pipeline {
             when {
                 branch 'master'
             }
-<<<<<<< HEAD
             environment {
                 KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
-                //cp "$KUBE_CONFIG_FILE" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
                 cat "$KUBECONFIG" > .kube/config
 
-=======
-            steps {
-                sh '''
->>>>>>> develop
                 helm upgrade --install movieapp-prod ./charts -n prod \
                   --set movie.image.repository=$DOCKER_ID/$MOVIE_IMAGE \
                   --set movie.image.tag=$DOCKER_TAG \
@@ -215,17 +177,15 @@ pipeline {
 
     post {
         always {
-            sh '''
-            docker compose down -v || true
-            '''
-        }
-
-        success {
-            echo "Pipeline terminé avec succès."
+            sh 'docker compose down -v || true'
         }
 
         failure {
             echo "Pipeline en erreur."
+        }
+
+        success {
+            echo "Pipeline terminé avec succès."
         }
     }
 }
