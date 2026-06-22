@@ -27,6 +27,7 @@ Learn to build your own microservice using Python and FastAPI
     ```
 
  - staging:
+   ```
      git checkout staging
      git merge develop
      git push origin staging
@@ -40,3 +41,42 @@ Learn to build your own microservice using Python and FastAPI
       git commit -m "Synchronize Jenkinsfile from develop"
       git push origin master
      ```
+
+
+### Maintenant que tout fonctionne, il faut faire un tag Git correspondant à cette version stable :
+     ```
+       git checkout master
+       git tag -a v1.0.0 -m "First stable CI/CD release"
+       git push origin v1.0.0
+     ```
+
+Ceci permettra de revenir facilement à la première version complètement opérationnelle du projet.
+
+### ----------------------------------------------
+
+Pour un projet DevOps de démonstration, tu as désormais :
+
+✅ GitHub Multibranch
+✅ Jenkins Pipeline as Code
+✅ Docker Build
+✅ DockerHub Push
+✅ Docker Compose Tests
+✅ Helm
+✅ Kubernetes K3s
+✅ Déploiement DEV automatique
+✅ Déploiement QA automatique
+✅ Déploiement STAGING automatique
+✅ Déploiement PROD depuis master
+✅ Secret File (kubeconfig)
+✅ Secret Text (DockerHub)
+✅ Déploiement de deux microservices (Movie + Cast) avec leurs bases PostgreSQL
+
+La prochaine amélioration naturelle serait d'ajouter :
+
+Tests Helm (helm lint)
+Quality Gate (SonarQube)
+ArgoCD (GitOps)
+Ingress + DNS
+Certificats TLS avec cert-manager
+
+Mais à ce stade, ton projet CI/CD Kubernetes est déjà cohérent et présentable en entretien ou en démonstration technique.
