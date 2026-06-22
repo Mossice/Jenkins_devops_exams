@@ -6,6 +6,7 @@ pipeline {
         MOVIE_IMAGE = "movie-service"
         CAST_IMAGE  = "cast-service"
         DOCKER_TAG = "v.${BUILD_ID}.0"
+        WORKSPACE = "/home/vagrant"
     }
 
     stages {
@@ -56,13 +57,14 @@ pipeline {
 
         stage('Prepare Kubernetes') {
             environment {
-                KUBE_CONFIG_FILE = credentials("config")
+                KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
                 mkdir -p .kube
-                cp "$KUBE_CONFIG_FILE" .kube/config
+                //cp "$KUBECONFIG" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
+                cat "$KUBECONFIG" > .kube/config
 
                 k3s kubectl get ns dev || k3s kubectl create ns dev
                 k3s kubectl get ns qa || k3s kubectl create ns qa
@@ -77,12 +79,13 @@ pipeline {
                 branch 'develop'
             }
             environment {
-                KUBE_CONFIG_FILE = credentials("config")
+                KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
-                cp "$KUBE_CONFIG_FILE" .kube/config
+                //cp "$KUBE_CONFIG_FILE" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
+                cat "$KUBECONFIG" > .kube/config
 
                 helm upgrade --install movieapp-dev ./charts -n dev \
                   --set movie.image.repository=$DOCKER_ID/$MOVIE_IMAGE \
@@ -100,12 +103,13 @@ pipeline {
                 branch 'qa'
             }
             environment {
-                KUBE_CONFIG_FILE = credentials("config")
+                KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
-                cp "$KUBE_CONFIG_FILE" .kube/config
+                //cp "$KUBE_CONFIG_FILE" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
+                cat "$KUBECONFIG" > .kube/config
 
                 helm upgrade --install movieapp-qa ./charts -n qa \
                   --set movie.image.repository=$DOCKER_ID/$MOVIE_IMAGE \
@@ -123,12 +127,13 @@ pipeline {
                 branch 'staging'
             }
             environment {
-                KUBE_CONFIG_FILE = credentials("config")
+                KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
-                cp "$KUBE_CONFIG_FILE" .kube/config
+                //cp "$KUBE_CONFIG_FILE" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
+                cat "$KUBECONFIG" > .kube/config
 
                 helm upgrade --install movieapp-staging ./charts -n staging \
                   --set movie.image.repository=$DOCKER_ID/$MOVIE_IMAGE \
@@ -155,12 +160,13 @@ pipeline {
                 branch 'master'
             }
             environment {
-                KUBE_CONFIG_FILE = credentials("config")
+                KUBECONFIG = credentials("config")
             }
             steps {
                 sh '''
-                cp "$KUBE_CONFIG_FILE" .kube/config
+                //cp "$KUBE_CONFIG_FILE" .kube/config
                 export KUBECONFIG=$WORKSPACE/.kube/config
+                cat "$KUBECONFIG" > .kube/config
 
                 helm upgrade --install movieapp-prod ./charts -n prod \
                   --set movie.image.repository=$DOCKER_ID/$MOVIE_IMAGE \
