@@ -25,8 +25,18 @@ Learn to build your own microservice using Python and FastAPI
       git merge develop
       git push origin qa
     ```
+
  - staging:
      git checkout staging
      git merge develop
      git push origin staging
    ```
+
+ - master:
+    ```
+      git checkout master
+      git checkout develop -- Jenkinsfile
+      git add Jenkinsfile
+      git commit -m "Synchronize Jenkinsfile from develop"
+      git push origin master
+     ```
